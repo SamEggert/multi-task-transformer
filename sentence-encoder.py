@@ -35,7 +35,7 @@ class SentenceEncoder(nn.Module):
         # Generate sentence embeddings using mean pooling
         sentence_embeddings = self.mean_pooling(outputs, attention_mask)
         
-        # Normalize embeddings (optional but recommended)
+        # Normalize embeddings
         sentence_embeddings = F.normalize(sentence_embeddings, p=2, dim=1)
         
         return sentence_embeddings
