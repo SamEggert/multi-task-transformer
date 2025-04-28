@@ -65,6 +65,19 @@ In a scenario requiring transfer learning, such as adapting the model to a new d
 ---
 
 
+# **Task 4: Training Loop Implementation**
+
+I implemented a training loop for the MultiTaskSentenceEncoder.
+
+* **Data:** I set up a PyTorch Dataset and DataLoader to handle hypothetical data, ensuring each batch contained text along with corresponding labels for both product category and sentiment.
+* **Forward Pass:** The model takes tokenized text and outputs a dictionary with separate logits for the category and sentiment tasks.
+* **MTL Loss:** The main consideration for multi-task learning here was the loss. I calculated the cross-entropy loss for each task separately. To combine them for the backward pass, I chose the simplest approach: summing the two losses (total_loss = category_loss + sentiment_loss). This gives equal weight to both tasks. More advanced methods exist, like using learned weights or uncertainty weighting, but summing them provides a straightforward baseline.
+* **Metrics:** I tracked performance by calculating accuracy and F1-score separately for both the category and sentiment tasks during evaluation.
+
+---
+
+
+
 # Sources:
 
 https://arxiv.org/pdf/1908.10084
