@@ -9,6 +9,7 @@ from multiTaskEncoder import (
     SENTIMENT_CATEGORIES
 )
 from transformers import BertTokenizer
+from tqdm import tqdm
 
 # Define a hypothetical dataset class
 class MultiTaskDataset(Dataset):
@@ -73,7 +74,8 @@ def train_epoch(model, dataloader, optimizer, device):
     total_category_loss = 0
     total_sentiment_loss = 0
     
-    for batch in dataloader:
+    pbar = tqdm(dataloader, desc="Training")
+    for batch in pbar:
         # Move batch to device
         input_ids = batch['input_ids'].to(device)
         attention_mask = batch['attention_mask'].to(device)
@@ -100,6 +102,12 @@ def train_epoch(model, dataloader, optimizer, device):
         total_category_loss += category_loss.item()
         total_sentiment_loss += sentiment_loss.item()
 
+        # Update progress bar
+        pbar.set_postfix({
+            'cat_loss': f'{category_loss.item():.4f}',
+            'sent_loss': f'{sentiment_loss.item():.4f}'
+        })
+
     return total_category_loss / len(dataloader), total_sentiment_loss / len(dataloader)
 
 def evaluate(model, dataloader, device):
@@ -111,7 +119,8 @@ def evaluate(model, dataloader, device):
     sentiment_labels = []
 
     with torch.no_grad():
-        for batch in dataloader:
+        pbar = tqdm(dataloader, desc="Evaluating")
+        for batch in pbar:
             input_ids = batch['input_ids'].to(device)
             attention_mask = batch['attention_mask'].to(device)
             category_label = batch['category_label'].to(device)
@@ -142,9 +151,11 @@ def evaluate(model, dataloader, device):
         'sentiment_f1': sentiment_f1
     }
 
-def main():
+def main(save_checkpoints=False):
+    print("\n=== Starting Training ===")
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"Using device: {device}")
     
     # Initialize model and tokenizer
     model = MultiTaskSentenceEncoder()
@@ -152,18 +163,21 @@ def main():
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
     
     # Create hypothetical data
-    texts, category_labels, sentiment_labels = create_hypothetical_data(num_samples=1000)
+    texts, category_labels, sentiment_labels = create_hypothetical_data(num_samples=50)
     
     # Create dataset and dataloader
     dataset = MultiTaskDataset(texts, category_labels, sentiment_labels, tokenizer)
-    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=8, shuffle=True)
     
     # Initialize optimizer
     optimizer = torch.optim.AdamW(model.parameters(), lr=2e-5)
     
     # Training loop
     num_epochs = 3
+    print(f"\nTraining for {num_epochs} epochs...")
     for epoch in range(num_epochs):
+        print(f"\nEpoch {epoch + 1}/{num_epochs}")
+        
         # Train for one epoch
         category_loss, sentiment_loss = train_epoch(model, dataloader, optimizer, device)
         
@@ -171,7 +185,7 @@ def main():
         metrics = evaluate(model, dataloader, device)
         
         # Print results
-        print(f"\nEpoch {epoch + 1}/{num_epochs}")
+        print(f"\nResults:")
         print(f"Category Loss: {category_loss:.4f}")
         print(f"Sentiment Loss: {sentiment_loss:.4f}")
         print(f"Category Accuracy: {metrics['category_accuracy']:.4f}")
@@ -179,5 +193,18 @@ def main():
         print(f"Sentiment Accuracy: {metrics['sentiment_accuracy']:.4f}")
         print(f"Sentiment F1: {metrics['sentiment_f1']:.4f}")
 
+        # Save checkpoint if enabled
+        if save_checkpoints:
+            checkpoint_path = f"checkpoint_epoch_{epoch+1}.pt"
+            torch.save({
+                'epoch': epoch + 1,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'category_loss': category_loss,
+                'sentiment_loss': sentiment_loss,
+                'metrics': metrics
+            }, checkpoint_path)
+            print(f"Checkpoint saved to {checkpoint_path}")
+
 if __name__ == "__main__":
-    main()
+    main(save_checkpoints=False)  # Default to False for demo purposes

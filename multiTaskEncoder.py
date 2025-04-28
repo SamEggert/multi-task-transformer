@@ -26,6 +26,10 @@ class MultiTaskSentenceEncoder(SentenceEncoder):
         
         # Task B: Sentiment Analysis Head
         self.sentiment_head = nn.Linear(hidden_size, len(SENTIMENT_CATEGORIES))
+        
+        # Freeze BERT weights (redundant but explicit)
+        for param in self.bert.parameters():
+            param.requires_grad = False
 
     def forward(self, input_ids, attention_mask):
         # Get sentence embeddings from parent class

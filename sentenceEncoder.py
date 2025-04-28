@@ -14,6 +14,10 @@ class SentenceEncoder(nn.Module):
         self.bert = BertModel.from_pretrained(pretrained_model)
         self.tokenizer = BertTokenizer.from_pretrained(pretrained_model)
         
+        # Freeze BERT weights
+        for param in self.bert.parameters():
+            param.requires_grad = False
+
     def mean_pooling(self, model_output, attention_mask):
         # First element of model_output contains all token embeddings
         token_embeddings = model_output[0]
