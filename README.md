@@ -42,6 +42,29 @@ In the forward method, I first get the sentence embedding using the parent class
 
 ---
 
+
+
+# **Task 3: Training Considerations**
+
+When training the multi-task model, different freezing strategies have distinct implications:
+
+1. **Entire Network Frozen:** If I freeze the whole network, no weights are updated. This isn't training; it's just running inference with the existing weights.
+2. **Transformer Backbone Frozen:** Here, only the task-specific heads (category_head, sentiment_head) are trained. The underlying BERT model's weights remain fixed. This approach leverages the powerful, general embeddings from the pre-trained BERT. It's computationally efficient—faster training, less memory—and often provides a strong baseline, especially with limited task-specific data. The rationale is to trust the pre-trained representations and only learn the final mapping to my tasks. However, it might forgo potential performance gains achievable by fine-tuning BERT specifically for these tasks. I'd consider this the most practical starting point.
+3. **One Task-Specific Head Frozen:** For instance, freezing the sentiment_head while training BERT and the category_head. This scenario is less common for standard multi-task learning. If the frozen head's loss still contributes to the backward pass, BERT receives potentially conflicting update signals. If the frozen head's loss is ignored, it essentially becomes single-task fine-tuning for the category task. I would generally avoid this unless I had a specific reason, like having already perfected one task head.
+
+**Transfer Learning Approach:**
+
+In a scenario requiring transfer learning, such as adapting the model to a new domain:
+
+1. **Choice of Pre-trained Model:** I would start with a robust base like bert-base-uncased, or preferably, a model pre-trained on text from the target domain (like BioBERT for medical text) if available, as this provides a more relevant starting point.
+2. **Layers to Freeze/Unfreeze:** My approach involves two phases:
+   * *Phase 1:* Freeze the entire pre-trained backbone. Train only the newly initialized task-specific heads on the target domain data.
+   * *Phase 2:* Unfreeze the backbone (potentially just the upper layers) and continue training all parts together, but using a significantly lower learning rate for the backbone layers compared to the heads.
+3. **Rationale:** This strategy first leverages the extensive knowledge captured in the pre-trained model without disrupting it, allowing the task heads to adapt quickly. Then, it carefully fine-tunes the backbone to the specific nuances of the new domain and tasks, minimizing the risk of catastrophic forgetting by using a low learning rate. This aims to balance general knowledge transfer with task-specific specialization.
+
+---
+
+
 # Sources:
 
 https://arxiv.org/pdf/1908.10084
