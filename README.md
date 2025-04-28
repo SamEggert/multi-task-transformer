@@ -1,6 +1,6 @@
 # **Task 1: Sentence Transformer Implementation**
 
-For this task, I implemented a sentence encoder using PyTorch and the `transformers` library, leveraging a pre-trained `bert-base-uncased` model as the backbone.
+For this task, I implemented a sentence encoder using PyTorch and the transformers library, leveraging a pre-trained bert-base-uncased model as the backbone.
 
 To get a single fixed-length embedding from BERT's token outputs, I added a **mean pooling** layer. My implementation averages the token embeddings, making sure to use the attention mask to exclude padding tokens from the calculation. I chose mean pooling because it considers all tokens in the sentence. After pooling, I applied **L2 normalization** to the embeddings. This makes them suitable for cosine similarity comparisons by giving them all a unit length.
 
@@ -28,6 +28,19 @@ The results look reasonable – the similar sentences about cheese have a high s
 
 ---
 
+
+# **Task 2: Multi-Task Learning Expansion**
+
+To support multi-task learning, I created a new MultiTaskSentenceEncoder class that inherits from my original SentenceEncoder This lets me reuse the base BERT model and the sentence embedding logic.
+
+The main architectural change was adding two separate linear "heads" on top of the shared sentence embedding:
+
+1. **Product Category Head (self.category_head):** An nn.layer to classify sentences into product categories I pulled from the Fetch website (Baby, Baking, Beauty, etc. - 28 total).
+2. **Sentiment Head (self.sentiment_head):** Another nn.layer for sentiment analysis, classifying into "negative", "neutral", or "positive".
+
+In the forward method, I first get the sentence embedding using the parent class's method, then pass that single embedding into both the category head and the sentiment head, returning the logits for each task.
+
+---
 
 # Sources:
 
